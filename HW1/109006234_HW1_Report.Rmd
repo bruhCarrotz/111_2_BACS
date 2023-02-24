@@ -1,0 +1,74 @@
+---
+title: "BACS HW1 - 109006234"
+author: "Credit: 109006278"
+output:
+  pdf_document: default
+geometry: margin = 0.8in
+header-includes: \usepackage{fvextra} \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+  \usepackage{booktabs}
+---
+
+**#Reading data from .txt file**
+```{r}
+customers <- read.table("G:/My Drive/111_2_BACS/HW1/customers.txt", header = TRUE)
+ages <- customers$age #storing raw data to ages
+```
+
+**#Q1 What is the 5th element in the original list of ages?**
+```{r}
+ages[5]
+```
+After storing all ages from the .txt file to the variable ages, we use indexing to access the 5th element of original list of ages. 
+
+**#Q2 What is the fifth lowest age?**
+```{r}
+sorted_ages <- sort(ages)
+sorted_ages <- unique(sorted_ages)
+sorted_ages[5]
+```
+We need to first sort the contents of the ages variable. As it would have a lot of duplicates, we can use unique() to remove the duplicates. Then, using indexing, we can get the 5th lowest age of the data. 
+
+**#Q3 Extract the five lowest ages together**
+```{r}
+sorted_ages[1:5]
+```
+Using the concept of slicing similar to those in Python, we can access the first five lowest ages after it is being sorted. 
+
+**#Q4 Get the five highest ages by first sorting them in decreasing order first.**
+```{r}
+decrease <- unique(sort(ages, decreasing=TRUE))
+decrease[1:5]
+```
+Using the sort() function, we have to add a parameter in order for it to sort in decreasing order. Then, we will use unique() to remove duplicates. Lastly, we use the slicing method to get the 5th highest ages in decreasing order. 
+
+**#Q5 What is the average (mean) age?**
+```{r}
+average <- mean(ages)
+average
+```
+
+**#Q6 What is the standard deviation of ages?**
+```{r}
+std_dev <- sd(ages)
+std_dev
+```
+
+**#Q7 Make a new variable called age_diff, with the difference between each age and the mean age**
+```{r}
+age_diff <- ages - average
+```
+
+**#Q8 What is the average “difference between each age and the mean age”?**
+```{r}
+mean(abs(age_diff))
+```
+For this question, we are trying to compute the mean derivation of the data. The mean deviation is usually used to calculate the average deviation from the mean value of the given data set. Using mean deviation, we can know the distance of the data to the center of the data set. We can also know how well the data spreads when it is visualized in a chart.
+
+**#Q9 Visualize the raw data as we did in class: (a) histogram, (b) density plot, (c) boxplot+stripchart**
+```{r}
+hist(ages, main = "Histogram of Ages") #Q9(a)
+plot(density(ages), 
+     main = "Density Plot of Ages") #Q9(b)
+boxplot(ages, horizontal = TRUE) #Q9(c)
+stripchart(ages, method="stack", add=TRUE)
+```
