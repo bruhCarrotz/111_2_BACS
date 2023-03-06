@@ -19,13 +19,13 @@ plot(density(d123), col = "darkgreen", lwd = 2, main = "Distribution 2")
 abline(v = mean(d123))
 abline(v = median(d123), lty = "dashed")
 ```
-**Computing Mean and Median**\
+**Computing Mean and Median**
 ```{r}
 mean(d123)
 median(d123)
 ```
 
-**Q1(b) Visualizing a bell-shaped graph**\
+**Q1(b) Visualizing a bell-shaped graph**
 ```{r}
 dist <- rnorm(n = 800, mean = 0,  sd = 0)
 
@@ -34,16 +34,16 @@ plot(density(dist), col = "red", lwd = 2, main = "Distribution 3")
 abline(v = mean(dist), lwd = 5, col = "green")
 abline(v = median(dist), col = "blue")
 ```
-**Computing Mean and Median**\
+**Computing Mean and Median**
 ```{r}
 mean(dist)
 median(dist)
 ```
 
-**Q1(c) Which of the central measurements is more likely to be affected by outliers in the data?**\ 
+**Q1(c) Which of the central measurements is more likely to be affected by outliers in the data? Is it mean or median?** \
 In measures of central tendency, mean is more sensitive that median because the result of mean is highly affected by how many outliers the data has. In addition to that, mean will also be affected by skewed distribution like the ones visualized in Q1(a).\
 
-**Q2(a) A normally distributed graph with: n=2000, mean=0, sd=1 with its mean and six standard deviation lines**\
+**Q2(a) A normally distributed graph with: n=2000, mean=0, sd=1 with its mean and six standard deviation lines**
 ```{r}
 rdata <- rnorm(n = 2000, mean = 0, sd = 1)
 
@@ -56,33 +56,35 @@ for(i in 1:3) {
 } 
 ```
 
-**Q2(b) Computing quantile distances from Q2(a) normally distributed dataset**\
+**Q2(b) Computing quantile distances from Q2(a) normally distributed dataset**
 ```{r}
 q <- quantile(rdata, probs = c(.25, .5, .75))
+q
 result <- (q - mean(rdata)) / sd(rdata)
 result
 ```
 
-**Q2(c) Computing quantile distances the given normally distributed dataset**\
+**Q2(c) Computing quantile distances the given normally distributed dataset**
 ```{r}
 rdata <- rnorm(n = 2000, mean = 35, sd = 3.5)
-q <- quantile(rdata, probs = c(.25, .5, .75))
-result <- (q - mean(rdata)) / sd(rdata)
+q1 <- quantile(rdata, probs = c(.25, .5, .75))
+result <- (q1 - mean(rdata)) / sd(rdata)
 result
 ```
+We can see that in Q2(c) that we have a larger mean and standard deviation compared to Q2(b). We can observe that with a larger standard deviation, the quantile distance becomes wider. We can also see that the mean shifts to the right, hence the quantile distance will follow accordingly. \
 
-**Q2(d) Computing quantile distances from Q1(a) normally distributed dataset**\
+**Q2(d) Computing quantile distances from Q1(a) normally distributed dataset**
 ```{r}
-q <- quantile(d123, probs = c(.25, .5, .75))
-result <- (q-mean(d123)) / sd(d123)
+q2 <- quantile(d123, probs = c(.25, .5, .75))
+result <- (q2-mean(d123)) / sd(d123)
 result
 ```
-Comparing the results with Q2(b), we can observe that the result are moving towards the positive value.\
+We can observe that mean and standard deviation of the Q1 dataset are bigger that the Q2b dataset. Hence, we can observe that as the standard deviation increase, the quantile distance is wider. However, as the Q2 sample size is significantly larger, its quantile distance can be more precise. \
 
 **Q3(a) Analysing histograms' formulas and its benefits** \ 
 In his comment, the number of bins is pretty much the same as said in the question that is k = (max - min)/h, where k is the number of bins, max(min) is the maximum(minimum) value in the observation group and h is the size of each bin.
 
-In this case, h is 2 x InterQuartileRange x n^-1/3. To calculate the width of the bin, the comment is using the Friedman-Diaconis' rule. Its benefits is that in case of occuring outliers, it won't so much affect the width of the bin. \
+In this case, h is 2 x InterQuartileRange x n^-1/3. To calculate the width of the bin, the comment is using the Freedman-Diaconis' rule. Its benefits is that in case of occuring outliers, it won't so much affect the width of the bin. \
 
 **Q3(b) Calculating histograms' numbers of bin and bin width using n=800, mean=20, sd = 5**\
 ```{r}
@@ -100,15 +102,15 @@ width_sturges
 **(ii) Scott's Formula**\
 ```{r}
 width_scott <- (3.49 * sd(rand_data)) / n^(1/3)
-bins_scott <- ceiling(max(rand_data) - min(rand_data)) + width_scott
+bins_scott <- ceiling(max(rand_data) - min(rand_data)) / width_scott
 width_scott
 bins_scott
 ```
 
-**(iii) Freedmen-Diaconis' Formula**\
+**(iii) Freedman-Diaconis' Formula**\
 ```{r}
 width_fd <- (2*IQR(rand_data)) / n^(1/3)
-bins_fd <- ceiling(max(rand_data) - min(rand_data)) + width_fd
+bins_fd <- ceiling(max(rand_data) - min(rand_data)) / width_fd
 width_fd
 bins_fd
 ```
@@ -129,16 +131,16 @@ width_sturges
 **(ii) Scott's Formula**\
 ```{r}
 width_scott <- (3.49 * sd(out_data)) / n^(1/3)
-bins_scott <- ceiling(max(out_data) - min(out_data)) + width_scott
+bins_scott <- ceiling(max(out_data) - min(out_data)) / width_scott
 width_scott
 bins_scott
 ```
 
-**(iii) Freedmen-Diaconis' Formula**\
+**(iii) Freedman-Diaconis' Formula**\
 ```{r}
 width_fd <- (2*IQR(out_data)) / n^(1/3)
-bins_fd <- ceiling(max(out_data) - min(out_data)) + width_fd
+bins_fd <- ceiling(max(out_data) - min(out_data)) / width_fd
 width_fd
 bins_fd
 ```
-Freedmen-Diaconis' formula can be said to be the most stable formula in case of existing outliers because it computes the number of bins and the width of the bins without needing to compute its mean as said in Q1(c).
+Freedman-Diaconis' formula can be said to be the most stable formula in case of existing outliers because it computes the number of bins and the width of the bins without needing to compute its mean as said in Q1(c).
