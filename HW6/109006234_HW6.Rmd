@@ -1,0 +1,159 @@
+---
+title: "BACS HW6 - 109006234"
+date: "March 26th 2023"
+output: pdf_document
+author: "Credit: 109006278"
+geometry: margin = 0.8in
+---
+
+# Problem 1
+
+**(a) Pick a reshaping package**
+```{r}
+library(tidyr)
+```
+The tidyr package is using gather(), which allows you to specify the columns to be reshaped, the names of the new columns, and how to handle missing values, among other options. It is easier to use if you are in the tidyverse ecosystem, such as dplyr, ggplot, etc.
+
+**(b) Show the code to reshape the verizon_wide.csv sample** 
+```{r}
+file <- read.csv("G:/My Drive/111_2_BACS/HW6/verizon_wide.csv")
+verizon <- gather(file, na.rm = TRUE, key = "type", value = "time")
+data <- split(x = verizon$time, f = verizon$type)
+```
+
+**(c) Show us the “head” and “tail” of the data to show that the reshaping worked** 
+```{r}
+head(verizon)
+tail(verizon)
+```
+
+**(d) Visualize Verizon’s response times for ILEC vs. CLEC customers**
+```{r, out.width = '65%', fig.align = "center"}
+ilec <- data$ILEC
+clec <- data$CLEC
+plot(density(ilec), lwd=2, main="ILEC and CLEC Density Plots")
+lines(density(clec), lwd=2, col="blue")
+legend(
+    150, 0.12, c("ILEC", "CLEC"),
+    lwd = c(2,2), lty = c("solid", "solid"),
+    col = c("black", "blue")
+)
+```
+
+# Problem 2
+
+**(a) State the appropriate null and alternative hypotheses (one-tailed)** \
+The null hypothesis is the mean of ILEC is less than equal to CLEC. The alternative hypothesis is the mean of ILEC is greater than to the mean of CLEC.
+
+**(b) Use the appropriate form of the t.test() function to test the difference between the mean of ILEC versus CLEC response times at 1% significance.**
+
+**(i) Conduct the test assuming variances of the two populations are equal**
+```{r}
+t.test(clec, ilec, alt="greater", var.equal=TRUE, conf.level=0.99)
+```
+
+**(ii) Conduct the test assuming variances of the two populations are not equal**
+```{r}
+t.test(clec, ilec, var.equal=FALSE, conf.level=0.99)
+```
+
+**(c) Use a permutation test to compare the means of ILEC vs. CLEC response times**
+```{r}
+permute_diff <- function(values, groups) {
+  permuted <- sample(values, replace = FALSE)
+  grouped <- split(permuted, groups)
+  diff <- mean(grouped$CLEC) - mean(grouped$ILEC)
+}
+```
+
+**(i) Visualize the distribution of permuted differences, and indicate the observed difference as well.**
+```{r, include=FALSE}
+nperms <- 10000
+observed_diff <- mean(clec) - mean(ilec)
+permuted_diffs <- replicate(nperms, permute_diff
+                    (verizon$time, verizon$type))
+```
+```{r, out.width = '65%', fig.align = "center"}
+hist(permuted_diffs, breaks = "fd", probability = TRUE, 
+    labels=seq(-10, 20, 5))
+lines(density(permuted_diffs), lwd=2, col="darkgreen", 
+    main="permuted_diffs Plot")
+abline(v=observed_diff, lty="dashed", col="red")
+```
+
+**(ii) What are the one-tailed and two-tailed p-values of the permutation test?**
+```{r}
+p_1tailed <- sum(permuted_diffs > observed_diff) / nperms
+p_1tailed
+p_2tailed <- sum(abs(permuted_diffs) > observed_diff) / nperms
+p_2tailed
+```
+
+**(iii) Would you reject the null hypothesis at 1% significance in a one-tailed test?** \
+Based on the calculation above, we can conclude that we fail to reject the null hypothesis.
+
+# Problem 3
+
+**(a) Compute the W statistic comparing the values. You may use either the permutation approach (try the functional form) or the rank sum approach.**
+```{r}
+#Functional form
+gt_eq <- function(a, b) {
+    ifelse(a > b, 1, 0) + ifelse(a == b, 0.5, 0)
+}
+wilcox <- sum(outer(clec, ilec, FUN = gt_eq))
+wilcox
+```
+
+**(b) Compute the one-tailed p-value for W.**
+```{r}
+n1 <- length(ilec) 
+n2 <- length(clec)
+wilcox_p_1tail <- 1 - pwilcox(wilcox, n1, n2)
+wilcox_p_1tail
+```
+
+**(c) Run the Wilcoxon Test again using the wilcox.test() function in R**
+```{r}
+wilcox.test(clec, ilec, alternative = "greater", conf.level=0.01)
+```
+
+**(d) At 1% significance, and one-tailed, would you reject the null hypothesis that the values of CLEC and ILEC are similar?** \
+Based on (c), we observe that the Wilcoxon test yield a small p-value. Hence, we can say that we reject the null hypothesis.
+
+# Problem 4
+**(a) norm_qq_plot() Function**
+```{r}
+norm_qq_plot <-function(values, main) {
+    probs1000 <- seq(0, 1, 0.001)
+    q_vals <- quantile(values, probs=probs1000)
+    q_norm <- qnorm(probs1000,mean=mean(values), sd = sd(values))
+    plot(q_norm, q_vals, xlab = "normal quantiles", 
+        ylab = "values quantiles", main = main)
+    abline(a=0, b=1, col="red", lwd = 2)
+}
+```
+
+**(b) Confirming norm_qq_plot() function** \
+```{r, out.width = '65%', fig.align = "center"}
+d1 <- rnorm(n = 500, mean = 15, sd = 5)
+d2 <- rnorm(n = 200, mean = 30, sd = 5)
+d3 <- rnorm(n = 100, mean = 45, sd = 5)
+d123 <- c(d1, d2, d3)
+layout(matrix(c(1,2), 1, 2, byrow = TRUE))
+plot(density(d123), main = "Gaussian Distribution")
+norm_qq_plot(values = d123, main = "d123 Q-Q Plot")
+```
+As can be seen in the Q-Q plot displayed, we can determined that the distribution is light tailed, meaning that the data is skewed, in this case it is skewed to the right.
+
+**(c) Use your normal Q-Q plot function to check if the values from each of the CLEC and ILEC samples we compared in question 2 could be normally distributed. What’s your conclusion?** \
+```{r, out.width = '65%', fig.align = "center"}
+layout(matrix(c(1,2), 1, 2, byrow = TRUE))
+plot(density(ilec), main = "ILEC Plot")
+plot(density(clec), main = "CLEC Plot")
+```
+```{r, out.width = '65%', fig.align = "center"}
+layout(matrix(c(1,2), 1, 2, byrow = TRUE))
+norm_qq_plot(ilec, main = "ILEC Normal Q-Q Plot")
+norm_qq_plot(clec, main = "CLEC Normal Q-Q Plot")
+```
+As both plots do not follow the red line, we can conclude that both ILEC and CLEC samples are not normally distributed. 

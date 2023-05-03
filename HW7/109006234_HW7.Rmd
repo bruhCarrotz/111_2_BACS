@@ -1,0 +1,184 @@
+---
+title: "BACS HW7 - 109006234"
+date: "April 9th 2023"
+output: pdf_document
+author: "Credit: 109006278"
+geometry: margin = 0.8in
+---
+
+```{r, include=FALSE}
+library(tidyr)
+library(reshape2)
+library(FSA)
+```
+**Additional Functions**
+```{r}
+norm_qq_plot <-function(values, main) {
+    probs1000 <- seq(0, 1, 0.001)
+    q_vals <- quantile(values, probs=probs1000)
+    q_norm <- qnorm(probs1000,mean=mean(values), sd = sd(values))
+    plot(q_norm, q_vals, 
+        xlab = "normal quantiles", ylab = "values quantiles", 
+        main = main)
+    abline(a=0, b=1, col="red", lwd = 2)
+}
+```
+
+**Loading The Datas**
+```{r}
+data1 <- read.csv("G:/My Drive/111_2_BACS/HW7/pls-media1.csv")$INTEND.0
+data2 <- read.csv("G:/My Drive/111_2_BACS/HW7/pls-media2.csv")$INTEND.0
+data3 <- read.csv("G:/My Drive/111_2_BACS/HW7/pls-media3.csv")$INTEND.0
+data4 <- read.csv("G:/My Drive/111_2_BACS/HW7/pls-media4.csv")$INTEND.0
+dataset <- list(data1, data2, data3, data4)
+```
+
+# Problem 1
+**(a) What are the means of viewers’ intentions to share (INTEND.0) on each of the four media types?**
+```{r}
+data1_mean <- mean(data1) 
+data2_mean <- mean(data2)
+data3_mean <- mean(data3)
+data4_mean <- mean(data4)
+```
+```{r, echo=FALSE}
+print(paste("The mean of pls-media1.csv: ", data1_mean))
+print(paste("The mean of pls-media2.csv: ", data2_mean))
+print(paste("The mean of pls-media3.csv: ", data3_mean))
+print(paste("The mean of pls-media4.csv: ", data4_mean))
+```
+**(b) Visualize the distribution and mean of intention to share, across all four media.**
+```{r, out.width = '65%', fig.align = "center"}
+boxplot(rev(dataset), horizontal=TRUE, main="Visualization of pls-media1 to pls-media4")
+abline(v=mean(sapply(dataset, mean)), col="red")
+```
+
+**(c) From the visualization alone, do you feel that media type makes a difference on intention to share?**
+From the boxplot, we can determine that pls-media2 has the smallest mean compared to the other datasets. 
+
+# Problem 2
+**(a) State the null and alternative hypotheses when comparing INTEND.0 across four groups in ANOVA** \
+```{r}
+#H0: The means of the medias are the same
+#H1: The means of the medias are not the same
+```
+
+**(b) Let’s compute the F-statistic ourselves** \
+**(i) Show the code and results of computing MSTR, MSE, and F**
+```{r}
+sstr <- sum(sapply(dataset, length)*(sapply(dataset, mean)-
+    mean(sapply(dataset, mean)))^2)
+df_mstr <- 4-1
+mstr <- sstr/df_mstr 
+```
+```{r, echo=FALSE}
+print(paste("The MSTR value: ", mstr))
+```
+```{r}
+sse <- sum((sapply(dataset, length)-1)*sapply(dataset, var))
+df_mse <- sum(sapply(dataset, length)) - 4
+mse <- sse/df_mse
+```
+```{r, echo=FALSE}
+print(paste("The MSE value: ", mse))
+```
+```{r}
+f_value <- mstr/mse
+```
+```{r, echo=FALSE}
+print(paste("The F-value: ", f_value))
+```
+**(ii) Compute the p-value of F, from the null F-distribution; is the F-value significant? If so, state your conclusion for the hypotheses.**
+```{r}
+qf(p=0.95, df1=df_mstr, df2=df_mse)
+p_value <- pf(f_value, df_mstr, df_mse, lower.tail=FALSE)
+```
+```{r, echo=FALSE}
+print(paste("The P-value: ", p_value))
+```
+Since the F-value is less than the critical F-value, we fail to reject the null hypothesis. We can also observe that the P-value is not significant because it is less than the significant level specified in the question. 
+
+**(c) Conduct the same one-way ANOVA using the aov() function in R – confirm that you got similar results.**
+```{r}
+anova_data <- melt(dataset, id.vars = NULL,
+    variable.name = "MediaType",
+    value.name = "Intend")
+anova_model <- aov(anova_data$Intend ~ factor(anova_data$L1))
+summary(anova_model)
+```
+Comparing the results, we can conclude that both calculations share similar results. 
+
+**(d) Regardless of your conclusions, conduct a post-hoc Tukey test to see if any pairs of media have significantly different means – what do you find?** \
+```{r}
+TukeyHSD(anova_model, conf.level = 0.05)
+```
+From the p-adj value, we can observe that it is much greater than the specified alpha, which is 0.05. Hence, we fail to reject the null hypothesis. In addition to that, we also observe that each difference of the media data is not significant. 
+
+**(e) Do you feel the classic requirements of one-way ANOVA were met?** \
+**Each treatment/population’s response variable is normally distributed** \
+```{r, out.width = '65%', fig.align = "center", echo=FALSE}
+layout(matrix(c(1, 2), 2, 2, byrow = TRUE))
+norm_qq_plot(data1, main="pls-media1 Q-Q Plot")
+norm_qq_plot(data2, main="pls-media2 Q-Q Plot")
+layout(matrix(c(1, 2), 2, 2, byrow = TRUE))
+norm_qq_plot(data3, main="pls-media3 Q-Q Plot")
+norm_qq_plot(data4, main="pls-media4 Q-Q Plot")
+```
+\
+As can be seen from the Q-Q plot, all media datas are not normally distributed. Hence, the first assumption fails.
+
+**The variance of the response variables is the same for all treatments/populations**
+```{r}
+bartlett.test(dataset)
+```
+From this result, we can observe that the p-value is greater than the specified alpha. Hence, we can assume that the variances are equal, which proves the second assumption. \
+
+**The observations are independent** \
+We assume that the observation are independent.
+
+# Problem 3
+**(a) State the null and alternative hypotheses** \
+```{r}
+#H0: The medians of the medias are the same
+#H1: The medians of the medias are not the same
+```
+
+
+**(b) Let’s compute (an approximate) Kruskal Wallis H ourselves**
+```{r}
+anova_data$ranks <- rank(anova_data$Intend)
+sum_ranks <- tapply(anova_data$ranks, anova_data$L1, sum) ; sum_ranks
+R <- c(sum_ranks[[1]]^2 / length(data1),
+    sum_ranks[[2]]^2 / length(data2),
+    sum_ranks[[3]]^2 / length(data3),
+    sum_ranks[[4]]^2 / length(data4))
+N <- sum(length(data1), length(data2), length(data3), length(data4))
+```
+**(i) Show the code and results of computing H**
+```{r}
+H <- (12/(N*(N+1))) * sum(R) - 3*(N+1)
+```
+```{r, echo=FALSE}
+print(paste("H: ", H))
+```
+
+**(ii) Compute the p-value of H, from the null chi-square distribution; is the H value significant? If so, state your conclusion of the hypotheses.**
+```{r}
+kruskal_p <- 1 - pchisq(H, df=4-1)
+```
+```{r, echo=FALSE}
+print(paste("Kruskal's P-value: ", kruskal_p))
+```
+From this result, we observe that the Kruskal's p-value is smaller than the significant value that is 0.05. Hence, we can reject the null hypothesis. 
+
+**(c) Conduct the same test using the kruskal.wallis() function in R – confirm that you got similar results.**
+```{r}
+kruskal.test(Intend~L1, data=anova_data)
+```
+From the results above, we can conclude that using both ways, the results are pretty much the same. 
+
+**(d) Regardless of your conclusions, conduct a post-hoc Dunn test to see if the values of any pairs of media are significantly different – what are your conclusions?**
+```{r}
+dunnTest(Intend~L1, data=anova_data, method = "bonferroni")
+```
+From the results above, we can see that pls-media2 and pls-media4 pair has a smaller p-value and adj p-value compared to the significant value that is 0.05. Hene, we can say that there are significant difference between the two groups. 
