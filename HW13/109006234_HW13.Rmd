@@ -1,0 +1,121 @@
+---
+title: "BACS HW13 - 109006234"
+date: "May 14th 2023"
+output:
+  pdf_document:
+    latex_engine: xelatex
+author: "Credit: 109006278"
+geometry: margin = 0.8in
+---
+```{r, include=FALSE}
+library(car)
+library(knitr)
+library(readxl)
+require(factoextra)
+```
+
+# Loading the data
+```{r}
+cars <- read.table("G:/My Drive/111_2_BACS/HW13/auto-data.txt", 
+    header=FALSE, na.strings = "?")
+names(cars) <- c("mpg", "cylinders", "displacement", 
+                "horsepower", "weight", "acceleration", 
+                "model_year", "origin", "car_name")
+cars_log <- with(cars, data.frame(log(mpg), log(cylinders), log(displacement), 
+        log(horsepower), log(weight), log(acceleration), model_year, origin))
+cars_log <- na.omit(cars_log)
+```
+
+# Problem 1
+## (a) Let’s analyze the principal components of the four collinear variables
+
+### (i) Create a new data.frame of the four log-transformed variables with high multicollinearity
+```{r}
+trf_var <- cars_log[, c("log.cylinders.", "log.displacement.", 
+        "log.horsepower.", "log.weight.")]
+summary(trf_var)
+```
+### (ii) How much variance of the four variables is explained by their first principal component?
+```{r}
+round(cor(trf_var), 2)
+cars_pca <- eigen(cor(trf_var))
+cars_pca$values
+```
+```{r}
+cars_pca$values[1]/sum(cars_pca$values)
+```
+The initial principal component accounts for 91.86% of the variation in the four variables.
+
+### (iii) Looking at the values and valence (positiveness/negativeness) of the first principal component’s eigenvector, what would you call the information captured by this component?
+```{r}
+cars_eigenvec <- cars_pca$vectors
+cars_eigenvec[,1]
+```
+The values for all variables are roughly -0.5, indicating that the initial principal component has an adverse effect on mpg. Hence, it is plausible that the first principal component pertains to the engine size.
+
+## (b) Let’s revisit our regression analysis on cars_log:
+### (i) Store the scores of the first principal component as a new column of cars_log
+```{r}
+cars_pca <- prcomp(trf_var)
+summary(cars_pca)
+```
+```{r}
+scores <- cars_pca$x |> round(3)
+head(scores, 5)
+```
+### (ii) Regress mpg over the column with PC1 scores (replacing cylinders, displacement, horsepower, and weight), as well as acceleration, model_year and origin
+```{r}
+cars_log$engine_size_PC1 <- -1*scores[,"PC1"]
+pc1 <- cars_log$engine_size_PC1
+reg_pca <- lm(log.mpg. ~ pc1 + log.acceleration. + model_year + factor(origin), 
+        data=as.data.frame(scale(cars_log)))
+summary(reg_pca)
+```
+### (iii) Try running the regression again over the same independent variables, but this time with everything standardized. How important is this new column relative to other columns?
+```{r}
+regr_pca_std <- lm(scale(log.mpg.) ~ scale(pc1) + scale(log.acceleration.) + 
+        model_year + factor(origin), data=as.data.frame(scale(cars_log)))
+summary(regr_pca_std)
+```
+PC1 is highly significant both prior to and after standardization. The reason for this could be that the data follows a normal distribution, resulting in no significant deviation. 
+
+# Problem 2
+```{r}
+security <- read_excel(
+        "G:/My Drive/111_2_BACS/HW13/security_questions.xlsx",
+        sheet = "data")
+```
+## (a) How much variance did each extracted factor explain?
+```{r}
+security_eigen <- eigen(cor(security))
+security_eigen$values
+security_pca <- prcomp(security, scale. = TRUE)
+sec_rotation <- security_pca$rotation[, 1:3] |> round(2)
+summary(security_pca)
+security_eigen$values[1] / sum(security_eigen$values)
+```
+Each of the extracted factors accounts for 51.73% of the variance. 
+
+## (b) How many dimensions would you retain, according to the two criteria we discussed? (Eigenvalue ≥ 1 and Scree Plot – can you show the screeplot with eigenvalue=1 threshhold?)
+```{r, out.width="80%", fig.align = "center"}
+screeplot(security_pca, type="lines")
+```
+## (c) Can you interpret what any of the principal components mean? Try guessing the meaning of the first two or three PCs looking at the PC-vs-variable matrix
+```{r}
+fviz_pca_biplot(security_pca, label = "var", addEllipses = T, 
+        itle = "PCA - Biplot of Security Questions")
+```
+Eigenvalues that are approximately -0.2 are present in PC1, indicating that this dimension represents security confidentiality as a whole and includes all questions from Q1 to Q18. In PC2, Q4, Q12, and Q17 exhibit a strong negative correlation, potentially due to their association with transaction record-keeping by the website. Negative values for these questions imply that individuals may lack confidence in the website's ability to maintain accurate transaction records. Conversely, PC3 displays a substantial negative correlation with Q5, Q8, Q10, and Q15, which relate to the website's identity verification process prior to granting access. Negative values for these questions indicate that people may be skeptical about the website's ability to prevent unauthorized access to their accounts.
+
+# Problem 3
+## (a) Create an oval shaped scatter plot of points that stretches in two directions – you should find that the principal component vectors point in the major and minor directions of variance (dispersion). Show this visualization.
+```{r, out.width="50%", fig.align = "center", echo=FALSE}
+include_graphics("3a.png")
+```
+```{r, out.width="50%", fig.align = "center", echo=FALSE}
+include_graphics("3a_1.png")
+```
+## (b) Can you create a scatterplot whose principal component vectors do NOT seem to match the major directions of variance? Show this visualization.
+```{r, out.width="50%", fig.align = "center", echo=FALSE}
+include_graphics("3b.png")
+```
